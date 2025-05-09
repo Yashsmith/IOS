@@ -1,60 +1,36 @@
-def encode(data):
-    # data = 4 bits: d1 d2 d3 d4
-    d1 = int(data[0])
-    d2 = int(data[1])
-    d3 = int(data[2])
-    d4 = int(data[3])
+def correct_hamming(received):
+    # Convert string to list of integers
+    bits = [int(bit) for bit in received]
 
-    # parity bits
-    p1 = d1 ^ d2 ^ d4
-    p2 = d1 ^ d3 ^ d4
-    p3 = d2 ^ d3 ^ d4
+    # We use 1-based positions: [p1, p2, d1, p3, d2, d3, d4]
+    # Indexes (0-based):       [ 0,  1,  2,  3,  4,  5,  6]
 
-    # final 7-bit code: p1 p2 d1 p3 d2 d3 d4
-    return [p1, p2, d1, p3, d2, d3, d4]
+    # Calculate syndrome bits (s1, s2, s3)
+    s1 = bits[0] ^ bits[2] ^ bits[4] ^ bits[6]  # parity bit p1
+    s2 = bits[1] ^ bits[2] ^ bits[5] ^ bits[6]  # parity bit p2
+    s3 = bits[3] ^ bits[4] ^ bits[5] ^ bits[6]  # parity bit p3
 
-def detect_and_correct(code):
-    # code = 7 bits: p1 p2 d1 p3 d2 d3 d4
-    p1 = code[0]
-    p2 = code[1]
-    d1 = code[2]
-    p3 = code[3]
-    d2 = code[4]
-    d3 = code[5]
-    d4 = code[6]
-
-    # syndrome bits
-    s1 = p1 ^ d1 ^ d2 ^ d4
-    s2 = p2 ^ d1 ^ d3 ^ d4
-    s3 = p3 ^ d2 ^ d3 ^ d4
-
-    error_pos = s3 * 4 + s2 * 2 + s1 * 1  # binary to decimal
+    # Calculate error position in decimal
+    error_pos = s3 * 4 + s2 * 2 + s1 * 1
 
     if error_pos == 0:
         print("✅ No error detected.")
     else:
-        print(f"❌ Error at position {error_pos} (1-based). Correcting...")
-        code[error_pos - 1] ^= 1  # flip the bit
+        print(f"❌ Error at position {error_pos}")
+        # Fix the error (flip the bit)
+        bits[error_pos - 1] ^= 1
+        print("✅ Error corrected.")
 
-    print("✅ Corrected code:", ''.join(str(bit) for bit in code))
-    print("📥 Original data bits:", code[2], code[4], code[5], code[6])
+    # Print corrected code
+    print("Corrected 7-bit Hamming code:", ''.join(str(bit) for bit in bits))
+    print("Original 4-bit data:", bits[2], bits[4], bits[5], bits[6])
 
-# -----------------------------
-# Main Program
-# -----------------------------
-data = input("Enter 4-bit binary data (e.g. 1011): ")
-while len(data) != 4 or not all(c in '01' for c in data):
-    data = input("❗ Please enter exactly 4 bits (only 0 and 1): ")
 
-code = encode(data)
-print("📤 Encoded 7-bit Hamming code:", ''.join(str(bit) for bit in code))
+# --- Main Program ---
+code = input("Enter 7-bit Hamming code (e.g. 0110011): ")
 
-received = input("Enter received 7-bit code (or press Enter to use same): ")
-if not received:
-    received = ''.join(str(bit) for bit in code)
-elif len(received) != 7 or not all(c in '01' for c in received):
-    print("❗ Invalid input. Using original code.")
-    received = ''.join(str(bit) for bit in code)
+# Input check
+while len(code) != 7 or not all(c in '01' for c in code):
+    code = input("Please enter exactly 7 bits (0 and 1 only): ")
 
-received_code = [int(bit) for bit in received]
-detect_and_correct(received_code)
+correct_hamming(code)
